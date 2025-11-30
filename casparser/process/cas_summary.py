@@ -65,6 +65,8 @@ def process_summary_text(text):
             if len(scheme_tails) > 0:
                 scheme = " ".join([scheme, *scheme_tails])
             scheme = re.sub(r"\(formerly.+?\)", "", scheme, flags=re.I | re.DOTALL).strip()
+            scheme = re.sub(r"\(erstwhile.+?\)", "", scheme, flags=re.I | re.DOTALL).strip()
+            scheme = re.sub(r"\t\t", " ", scheme)
             rta = m.group("rta").strip()
             rta_code = m.group("code").strip()
             isin_ = m.group("isin")

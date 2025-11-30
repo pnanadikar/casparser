@@ -57,11 +57,14 @@ def group_similar_blocks(blocks, file_type=FileType.UNKNOWN, mode="vertical"):
         grouped_blocks = group_similar_blocks(
             grouped_blocks, file_type=file_type, mode="horizontal"
         )
+    # sort the lines so that we get each line as in the pdf
+    for gb in grouped_blocks:
+        gb['lines'] = sorted(gb['lines'], key=lambda x: (x['bbox'][0]))
 
     return grouped_blocks
 
 
-def extract_blocks(page_dict, file_type=FileType.UNKNOWN):
+def extract_blocks_old(page_dict, file_type=FileType.UNKNOWN):
     """Extract text blocks from page dictionary.
     The logic is similar to `PyMuPDF.TextPage.extractBLOCKS` but with a slightly better text
     arrangement.
@@ -118,6 +121,36 @@ def extract_blocks(page_dict, file_type=FileType.UNKNOWN):
             blocks.append([*block["bbox"], text])
     return blocks
 
+
+def extract_blocks(page_dict, file_type=FileType.UNKNOWN):
+    """Extract text blocks from page dictionary.
+    The logic is similar to `PyMuPDF.TextPage.extractBLOCKS` but with a slightly better text
+    arrangement.
+    """
+    blocks = []
+    grouped_blocks = group_similar_blocks(page_dict.get("blocks", []), file_type=file_type)
+    for num, block in enumerate(grouped_blocks):
+        lines = []
+        items = []
+        for line in block["lines"]:
+            line_text = "\t\t".join(
+                [
+                    span["text"].strip()
+                    for span in sorted(line["spans"], key=lambda x: (x["origin"][0]))
+                    if span["text"].strip()
+                ]
+            )
+            items.append([line_text, line["bbox"]])
+        if len(items) > 0:
+            full_text = "\t\t".join(
+                [x[0] for x in sorted(items, key=lambda x: x[1][0]) if x[0].strip()]
+            )
+            if full_text.strip():
+                lines.append(full_text)
+        text = "\n".join(lines)
+        if text.strip() != "":
+            blocks.append([*block["bbox"], text])
+    return blocks
 
 def parse_file_type(blocks):
     """Parse file type."""
